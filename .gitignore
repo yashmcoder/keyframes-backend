@@ -1,0 +1,23 @@
+# Backend .gitignore
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Contact submissions (optional - remove if you want to track these)
+contact-submissions.json
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
