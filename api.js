@@ -21,19 +21,34 @@ const allowedOrigins = [
   process.env.FRONTEND_URL, // Production frontend URL
 ].filter(Boolean); // Remove undefined values
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.pages.dev')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+const isDev = process.env.NODE_ENV !== 'production';
+
+// In development be permissive (helps with 127.0.0.1 vs localhost and other dev hosts)
+const corsOptions = isDev
+  ? { origin: true, credentials: true }
+  : {
+      origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        // Log origin for debugging
+        // (you can remove this log once things are working)
+        console.log('CORS request from origin:', origin);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.pages.dev')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+    };
+
+app.use(cors(corsOptions));
+
+// Ensure preflight OPTIONS requests are handled for all routes
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 // Path to JSON file
