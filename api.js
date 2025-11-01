@@ -18,31 +18,44 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:3000', // Alternative dev port
-  process.env.FRONTEND_URL, // Production frontend URL
+  'http://localhost:5174', // Alternative Vite port
+  process.env.FRONTEND_URL, // Production frontend URL from .env
 ].filter(Boolean); // Remove undefined values
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-// In development be permissive (helps with 127.0.0.1 vs localhost and other dev hosts)
-const corsOptions = isDev
-  ? { origin: true, credentials: true }
-  : {
-      origin: function(origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
+// CORS options: permissive in dev, strict in production
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
 
-        // Log origin for debugging
-        // (you can remove this log once things are working)
-        console.log('CORS request from origin:', origin);
+    // Log origin for debugging (remove in production if desired)
+    console.log('CORS request from origin:', origin);
 
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.pages.dev')) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-    };
+    // In dev mode, allow all localhost origins
+    if (isDev && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      return callback(null, true);
+    }
+
+    // Check against allowed origins list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+
+    // Allow Cloudflare Pages preview deployments (*.pages.dev)
+    if (origin.endsWith('.pages.dev')) {
+      return callback(null, true);
+    }
+
+    // Reject all others
+    console.warn(`⚠️  CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
 app.use(cors(corsOptions));
 
